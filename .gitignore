@@ -1,0 +1,7 @@
+# Anything you drop next to the defaults stays on your machine; your own
+# pictures and sounds belong in ~/.config/pr-reactions/ anyway.
+media/*
+!media/approve.png
+!media/fail.png
+.DS_Store
+__pycache__/
