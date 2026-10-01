@@ -1,0 +1,26 @@
+# Run the tests on every pull request and on pushes to main.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verdict parser
+        run: python3 -m unittest discover tests -v
+      - name: Hook end to end (dry run)
+        run: bash tests/test_hook.sh
