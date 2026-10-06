@@ -4,7 +4,9 @@ When Claude Code reviews a pull request for me, I wanted to *see* the result, no
 
 This repo has the script and two plain cards to start with. Bring your own pictures and sounds.
 
-![The two default cards: a green APPROVED card and a red CHANGES REQUESTED card](docs/cards.png)
+![The default APPROVED card fading in at the bottom of the screen and out again, then the CHANGES REQUESTED card](docs/demo.gif)
+
+*An animation of the two default cards with the popup's real size, placement and timings, drawn by `scripts/make-demo.sh` rather than screen-recorded.*
 
 ## How it works
 
@@ -80,6 +82,7 @@ Memes and sound clips usually belong to someone else, so keep yours in the confi
 - `popup.js`: the fading window (JavaScript for Automation).
 - `install.sh`: adds or removes the hook.
 - `scripts/make-cards.js`: redraws the default cards.
+- `scripts/make-demo.sh`: redraws the demo GIF above from those cards (needs `ffmpeg`).
 - `tests/`: unit tests for the verdict parser, plus a dry-run check of the whole hook. Run them with `python3 -m unittest discover tests` and `bash tests/test_hook.sh`. CI runs both on every pull request.
 
 ## License
