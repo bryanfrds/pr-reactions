@@ -6,7 +6,7 @@ This repo has the script and two plain cards to start with. Bring your own pictu
 
 ![The default APPROVED card fading in at the bottom of the screen and out again, then the CHANGES REQUESTED card](docs/demo.gif)
 
-*An animation of the two default cards with the popup's real timings, drawn by `scripts/make-demo.sh` rather than screen-recorded.*
+*An animation of the two default cards with the popup's real size, placement and timings, drawn by `scripts/make-demo.sh` rather than screen-recorded.*
 
 ## How it works
 
