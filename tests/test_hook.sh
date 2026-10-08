@@ -25,14 +25,21 @@ check "then the video, with no separate sound"    "approve $PR_REACTIONS_CONFIG/
 check "then the picture again"                     "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
 check "fail keeps its own turn"                    "fail $PWD/media/fail.png" '--show fail'
 touch "$PR_REACTIONS_CONFIG/fail.mp4"
-check "fail with a video starts on its picture"   "fail $PWD/media/fail.png" '--show fail'
-check "and then its video"                         "fail $PR_REACTIONS_CONFIG/fail.mp4 no-sound" '--show fail'
+check "fail with only a video always plays it"   "fail $PR_REACTIONS_CONFIG/fail.mp4 no-sound" '--show fail'
+check "rather than the built-in card"              "fail $PR_REACTIONS_CONFIG/fail.mp4 no-sound" '--show fail'
 printf 'APPROVE_SECONDS=4\nPLAY=video\n' > "$PR_REACTIONS_CONFIG/config"
 check "PLAY=video always shows the video"         "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
 check "every time"                                 "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
 printf 'PLAY=image\n' > "$PR_REACTIONS_CONFIG/config"
 check "PLAY=image never shows it"                 "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
-rm "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/config"
+# A video with no picture of your own always plays: the built-in card doesn't take turns.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.mov"
 check "a video alone always shows"                "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+check "again"                                     "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+# A config folder that can't be written still works, silently, on the picture.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mov"; chmod a-w "$PR_REACTIONS_CONFIG"
+err=$(bash pr-reactions.sh --show approve 2>&1 >/dev/null)
+[ -z "$err" ] && echo "ok   a read-only config folder prints no errors" || { echo "FAIL read-only config: $err"; fails=$((fails + 1)); }
+chmod u+w "$PR_REACTIONS_CONFIG"
 
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
