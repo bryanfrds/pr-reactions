@@ -43,9 +43,16 @@ check "a fail in between starts on its own turn"  "fail $PR_REACTIONS_CONFIG/fai
 check "and approve carries on with the video"     "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
 # A config folder that can't be written still works, silently, on the picture.
 export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mov"; chmod a-w "$PR_REACTIONS_CONFIG"
-out=$(bash pr-reactions.sh --show approve 2>/tmp/prr-err.$); err=$(cat /tmp/prr-err.$); rm -f /tmp/prr-err.$
+errf=$(mktemp); out=$(bash pr-reactions.sh --show approve 2>"$errf"); err=$(cat "$errf"); rm -f "$errf"
 [ -z "$err" ] && echo "ok   a read-only config folder prints no errors" || { echo "FAIL read-only config: $err"; fails=$((fails + 1)); }
 [[ "$out" == "approve $PR_REACTIONS_CONFIG/approve.gif"* ]] && echo "ok   and shows the picture" || { echo "FAIL read-only config shows: $out"; fails=$((fails + 1)); }
 chmod u+w "$PR_REACTIONS_CONFIG"
+# A writable folder with a read-only turn file: still silent, and the turn simply stays.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mov"
+echo video > "$PR_REACTIONS_CONFIG/.next-approve"; chmod a-w "$PR_REACTIONS_CONFIG/.next-approve"
+errf=$(mktemp); out=$(bash pr-reactions.sh --show approve 2>"$errf"); err=$(cat "$errf"); rm -f "$errf"
+[ -z "$err" ] && echo "ok   a read-only turn file prints no errors" || { echo "FAIL read-only turn file: $err"; fails=$((fails + 1)); }
+[[ "$out" == "approve $PR_REACTIONS_CONFIG/approve.mov"* ]] && echo "ok   and plays the turn it holds" || { echo "FAIL read-only turn file shows: $out"; fails=$((fails + 1)); }
+chmod u+w "$PR_REACTIONS_CONFIG/.next-approve"
 
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
