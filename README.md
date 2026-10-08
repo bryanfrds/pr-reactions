@@ -60,7 +60,7 @@ ffmpeg -i clip.mp4 -vf "fps=30,scale=360:-2,chromakey=0x00FF00:0.18:0.08,despill
   -c:v hevc_videotoolbox -alpha_quality 0.8 -tag:v hvc1 -c:a aac approve.mov
 ```
 
-Set `PLAY=image` or `PLAY=video` in the config to stop the turns and always show one.
+A video with no picture of your own always plays. `APPROVE_SECONDS` / `FAIL_SECONDS` don't apply to videos, which play to their end (cut off at 30 seconds). Set `PLAY=image` or `PLAY=video` in the config to stop the turns and always show one; `PLAY=video` with no video falls back to the picture. Dry runs (`PR_REACTIONS_DRY_RUN=1`) move the turn too.
 
 Anything you leave out falls back to the default card, or to no sound. The `config` file is plain shell:
 
