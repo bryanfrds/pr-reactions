@@ -24,7 +24,8 @@ function run(argv) {
     const track = item.asset.tracksWithMediaType('vide').firstObject;   // 'vide' = AVMediaTypeVideo
     if (!track || track.isNil()) return;
     const size = track.naturalSize;
-    h = 320; w = Math.round(h * size.width / size.height) || 222;
+    h = 320; w = Math.round(h * size.width / size.height);
+    if (!Number.isFinite(w) || w <= 0) w = 222;
   } else {
     img = $.NSImage.alloc.initWithContentsOfFile(path);
     if (!img || img.isNil()) return;
