@@ -35,8 +35,8 @@ esac
 # First match wins: your files in the config folder, then the defaults here.
 find_file() {   # find_file <name> <ext>...
   local name="$1"; shift
-  local dirs=("$CONFIG_DIR"); [ -n "${PR_REACTIONS_ONLY_CONFIG:-}" ] || dirs+=("$HERE/media")
-  for dir in "${dirs[@]}"; do
+  local dirs=("$CONFIG_DIR"); [ -n "${_PRR_ONLY_CONFIG:-}" ] || dirs+=("$HERE/media")
+  local dir; for dir in "${dirs[@]}"; do
     for ext in "$@"; do
       [ -f "$dir/$name.$ext" ] && { echo "$dir/$name.$ext"; return; }
     done
@@ -49,7 +49,7 @@ VIDEO=$(find_file "$RESULT" mov mp4 m4v)
 # With both your own picture and a video for this reaction, they take turns. A video
 # on its own always plays (the built-in card doesn't count as a picture of yours).
 # A video plays to its end with its own sound, so the separate sound is skipped.
-OWN_IMG=$(PR_REACTIONS_ONLY_CONFIG=1 find_file "$RESULT" png gif jpg jpeg)
+OWN_IMG=$(_PRR_ONLY_CONFIG=1 find_file "$RESULT" png gif jpg jpeg)
 pick="image"
 case "$PLAY" in
   video) [ -n "$VIDEO" ] && pick=video ;;
@@ -59,7 +59,7 @@ case "$PLAY" in
       turn="$CONFIG_DIR/.next-$RESULT"
       [ "$(cat "$turn" 2>/dev/null)" = video ] && pick=video
       # (dry runs move the turn too, so --show tries each in order)
-      [ -w "$CONFIG_DIR" ] && { [ "$pick" = video ] && echo image || echo video; } > "$turn"
+      [ -w "$CONFIG_DIR" ] && { [ "$pick" = video ] && echo image || echo video; } 2>/dev/null > "$turn"
     elif [ -n "$VIDEO" ]; then
       pick=video
     fi ;;
