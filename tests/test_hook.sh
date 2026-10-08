@@ -18,4 +18,21 @@ check "bad JSON shows nothing"         ""                                       
 touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mp3"
 printf 'APPROVE_SECONDS=4\n' > "$PR_REACTIONS_CONFIG/config"
 check "your own files and config win"  "approve $PR_REACTIONS_CONFIG/approve.gif $PR_REACTIONS_CONFIG/approve.mp3 4s" '--show approve'
+# A video for the same reaction takes turns with the picture, with its own sound.
+touch "$PR_REACTIONS_CONFIG/approve.mov"
+check "with a video too, the picture comes first" "approve $PR_REACTIONS_CONFIG/approve.gif $PR_REACTIONS_CONFIG/approve.mp3" '--show approve'
+check "then the video, with no separate sound"    "approve $PR_REACTIONS_CONFIG/approve.mov no-sound" '--show approve'
+check "then the picture again"                     "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+check "fail keeps its own turn"                    "fail $PWD/media/fail.png" '--show fail'
+touch "$PR_REACTIONS_CONFIG/fail.mp4"
+check "fail with a video starts on its picture"   "fail $PWD/media/fail.png" '--show fail'
+check "and then its video"                         "fail $PR_REACTIONS_CONFIG/fail.mp4 no-sound" '--show fail'
+printf 'APPROVE_SECONDS=4\nPLAY=video\n' > "$PR_REACTIONS_CONFIG/config"
+check "PLAY=video always shows the video"         "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+check "every time"                                 "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+printf 'PLAY=image\n' > "$PR_REACTIONS_CONFIG/config"
+check "PLAY=image never shows it"                 "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+rm "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/config"
+check "a video alone always shows"                "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
