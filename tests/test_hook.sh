@@ -18,4 +18,41 @@ check "bad JSON shows nothing"         ""                                       
 touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mp3"
 printf 'APPROVE_SECONDS=4\n' > "$PR_REACTIONS_CONFIG/config"
 check "your own files and config win"  "approve $PR_REACTIONS_CONFIG/approve.gif $PR_REACTIONS_CONFIG/approve.mp3 4s" '--show approve'
+# A video for the same reaction takes turns with the picture, with its own sound.
+touch "$PR_REACTIONS_CONFIG/approve.mov"
+check "with a video too, the picture comes first" "approve $PR_REACTIONS_CONFIG/approve.gif $PR_REACTIONS_CONFIG/approve.mp3" '--show approve'
+check "then the video, with no separate sound"    "approve $PR_REACTIONS_CONFIG/approve.mov no-sound" '--show approve'
+check "then the picture again"                     "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+check "fail keeps its own turn"                    "fail $PWD/media/fail.png" '--show fail'
+touch "$PR_REACTIONS_CONFIG/fail.mp4"
+check "fail with only a video always plays it"   "fail $PR_REACTIONS_CONFIG/fail.mp4 no-sound" '--show fail'
+check "rather than the built-in card"              "fail $PR_REACTIONS_CONFIG/fail.mp4 no-sound" '--show fail'
+printf 'APPROVE_SECONDS=4\nPLAY=video\n' > "$PR_REACTIONS_CONFIG/config"
+check "PLAY=video always shows the video"         "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+check "every time"                                 "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+printf 'PLAY=image\n' > "$PR_REACTIONS_CONFIG/config"
+check "PLAY=image never shows it"                 "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+# A video with no picture of your own always plays: the built-in card doesn't take turns.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.mov"
+check "a video alone always shows"                "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+check "again"                                     "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+# Each reaction keeps its own turn: approve, fail, approve.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG"/{approve.gif,approve.mov,fail.png,fail.mp4}
+check "approve takes its first turn"               "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+check "a fail in between starts on its own turn"  "fail $PR_REACTIONS_CONFIG/fail.png" '--show fail'
+check "and approve carries on with the video"     "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+# A config folder that can't be written still works, silently, on the picture.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mov"; chmod a-w "$PR_REACTIONS_CONFIG"
+errf=$(mktemp); out=$(bash pr-reactions.sh --show approve 2>"$errf"); err=$(cat "$errf"); rm -f "$errf"
+[ -z "$err" ] && echo "ok   a read-only config folder prints no errors" || { echo "FAIL read-only config: $err"; fails=$((fails + 1)); }
+[[ "$out" == "approve $PR_REACTIONS_CONFIG/approve.gif"* ]] && echo "ok   and shows the picture" || { echo "FAIL read-only config shows: $out"; fails=$((fails + 1)); }
+chmod u+w "$PR_REACTIONS_CONFIG"
+# A writable folder with a read-only turn file: still silent, and the turn simply stays.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mov"
+echo video > "$PR_REACTIONS_CONFIG/.next-approve"; chmod a-w "$PR_REACTIONS_CONFIG/.next-approve"
+errf=$(mktemp); out=$(bash pr-reactions.sh --show approve 2>"$errf"); err=$(cat "$errf"); rm -f "$errf"
+[ -z "$err" ] && echo "ok   a read-only turn file prints no errors" || { echo "FAIL read-only turn file: $err"; fails=$((fails + 1)); }
+[[ "$out" == "approve $PR_REACTIONS_CONFIG/approve.mov"* ]] && echo "ok   and plays the turn it holds" || { echo "FAIL read-only turn file shows: $out"; fails=$((fails + 1)); }
+chmod u+w "$PR_REACTIONS_CONFIG/.next-approve"
+
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
