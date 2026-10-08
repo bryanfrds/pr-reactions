@@ -36,10 +36,16 @@ check "PLAY=image never shows it"                 "approve $PR_REACTIONS_CONFIG/
 export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.mov"
 check "a video alone always shows"                "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
 check "again"                                     "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+# Each reaction keeps its own turn: approve, fail, approve.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG"/{approve.gif,approve.mov,fail.png,fail.mp4}
+check "approve takes its first turn"               "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+check "a fail in between starts on its own turn"  "fail $PR_REACTIONS_CONFIG/fail.png" '--show fail'
+check "and approve carries on with the video"     "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
 # A config folder that can't be written still works, silently, on the picture.
 export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG/approve.gif" "$PR_REACTIONS_CONFIG/approve.mov"; chmod a-w "$PR_REACTIONS_CONFIG"
-err=$(bash pr-reactions.sh --show approve 2>&1 >/dev/null)
+out=$(bash pr-reactions.sh --show approve 2>/tmp/prr-err.$); err=$(cat /tmp/prr-err.$); rm -f /tmp/prr-err.$
 [ -z "$err" ] && echo "ok   a read-only config folder prints no errors" || { echo "FAIL read-only config: $err"; fails=$((fails + 1)); }
+[[ "$out" == "approve $PR_REACTIONS_CONFIG/approve.gif"* ]] && echo "ok   and shows the picture" || { echo "FAIL read-only config shows: $out"; fails=$((fails + 1)); }
 chmod u+w "$PR_REACTIONS_CONFIG"
 
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
