@@ -1,6 +1,7 @@
 #!/bin/bash
 # pr-reactions: pop up a reaction when a Claude Code pr-reviewer subagent
-# finishes. One picture and sound for an approval, another for requested changes.
+# finishes. One picture and sound for an approval, another for requested changes,
+# each optionally taking turns with a video clip.
 #
 # Runs as a Claude Code SubagentStop hook and reads the hook's JSON on stdin.
 #   pr-reactions.sh                 hook mode (reads stdin)
@@ -16,6 +17,8 @@ CONFIG_DIR="${PR_REACTIONS_CONFIG:-$HOME/.config/pr-reactions}"
 APPROVE_SECONDS=2
 FAIL_SECONDS=1.5
 VOLUME=0.35
+VIDEO_VOLUME=0.3     # videos carry their own sound, usually mixed loud
+PLAY=both            # both: a picture and a video take turns; or image / video
 [ -f "$CONFIG_DIR/config" ] && . "$CONFIG_DIR/config"
 
 if [ "${1:-}" = "--show" ]; then
@@ -40,6 +43,24 @@ find_file() {   # find_file <name> <ext>...
 }
 IMG=$(find_file "$RESULT" png gif jpg jpeg)
 SOUND=$(find_file "$RESULT" mp3 m4a wav aiff)
+VIDEO=$(find_file "$RESULT" mov mp4 m4v)
+
+# With both a picture and a video for this reaction, they take turns. A video plays
+# to its end with its own sound, so the separate sound is skipped.
+pick="image"
+case "$PLAY" in
+  video) [ -n "$VIDEO" ] && pick=video ;;
+  image) ;;
+  *)
+    if [ -n "$VIDEO" ] && [ -n "$IMG" ]; then
+      turn="$CONFIG_DIR/.next-$RESULT"
+      [ "$(cat "$turn" 2>/dev/null)" = video ] && pick=video
+      { [ "$pick" = video ] && echo image || echo video; } > "$turn" 2>/dev/null
+    elif [ -n "$VIDEO" ]; then
+      pick=video
+    fi ;;
+esac
+if [ "$pick" = video ]; then IMG="$VIDEO"; SOUND=""; fi
 
 if [ -n "${PR_REACTIONS_DRY_RUN:-}" ]; then
   echo "$RESULT ${IMG:-no-image} ${SOUND:-no-sound} ${HOLD}s"
@@ -49,5 +70,5 @@ fi
 [ "$(uname)" = "Darwin" ] || exit 0          # the popup is macOS-only for now
 
 [ -n "$SOUND" ] && { nohup afplay -v "$VOLUME" "$SOUND" >/dev/null 2>&1 & }
-nohup osascript -l JavaScript "$HERE/popup.js" "$IMG" "$HOLD" >/dev/null 2>&1 &
+nohup osascript -l JavaScript "$HERE/popup.js" "$IMG" "$HOLD" "$VIDEO_VOLUME" >/dev/null 2>&1 &
 exit 0
