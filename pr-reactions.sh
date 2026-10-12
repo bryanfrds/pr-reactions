@@ -46,25 +46,39 @@ IMG=$(find_file "$RESULT" png gif jpg jpeg)
 SOUND=$(find_file "$RESULT" mp3 m4a wav aiff)
 VIDEO=$(find_file "$RESULT" mov mp4 m4v)
 
-# With both your own picture and a video for this reaction, they take turns. A video
-# on its own always plays (the built-in card doesn't count as a picture of yours).
+# More videos for a reaction go in as approve-2.mov, approve-3.mp4 and so on.
+VIDEOS=()
+[ -n "$VIDEO" ] && VIDEOS+=("$VIDEO")
+n=2
+while v=$(find_file "$RESULT-$n" mov mp4 m4v); [ -n "$v" ]; do VIDEOS+=("$v"); n=$((n + 1)); done
+
+# Your own picture and each video take turns, in that order. Videos on their own
+# take turns with each other (the built-in card doesn't count as a picture of yours).
 # A video plays to its end with its own sound, so the separate sound is skipped.
 OWN_IMG=$(_PRR_ONLY_CONFIG=1 find_file "$RESULT" png gif jpg jpeg)
-pick="image"
+slots=()
 case "$PLAY" in
-  video) [ -n "$VIDEO" ] && pick=video ;;
   image) ;;
+  video) slots=(${VIDEOS[@]+"${VIDEOS[@]}"}) ;;
   *)
-    if [ -n "$VIDEO" ] && [ -n "$OWN_IMG" ]; then
-      turn="$CONFIG_DIR/.next-$RESULT"
-      [ "$(cat "$turn" 2>/dev/null)" = video ] && pick=video
-      # (dry runs move the turn too, so --show tries each in order)
-      [ -w "$CONFIG_DIR" ] && { [ "$pick" = video ] && echo image || echo video; } 2>/dev/null > "$turn"
-    elif [ -n "$VIDEO" ]; then
-      pick=video
-    fi ;;
+    if [ -n "$OWN_IMG" ]; then slots=(image); fi
+    slots+=(${VIDEOS[@]+"${VIDEOS[@]}"}) ;;
 esac
-if [ "$pick" = video ]; then IMG="$VIDEO"; SOUND=""; fi
+[ ${#slots[@]} -gt 0 ] || slots=(image)
+pick="${slots[0]}"
+if [ ${#slots[@]} -gt 1 ]; then
+  turn="$CONFIG_DIR/.next-$RESULT"
+  at=$(cat "$turn" 2>/dev/null)
+  case "$at" in
+    video) at=1 ;;                 # the turn file from before there could be more videos
+    ''|*[!0-9]*) at=0 ;;
+  esac
+  at=$((at % ${#slots[@]}))
+  pick="${slots[$at]}"
+  # (dry runs move the turn too, so --show tries each in order)
+  [ -w "$CONFIG_DIR" ] && echo $(((at + 1) % ${#slots[@]})) 2>/dev/null > "$turn"
+fi
+if [ "$pick" != image ]; then IMG="$pick"; SOUND=""; fi
 
 if [ -n "${PR_REACTIONS_DRY_RUN:-}" ]; then
   echo "$RESULT ${IMG:-no-image} ${SOUND:-no-sound} ${HOLD}s"

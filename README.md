@@ -55,7 +55,7 @@ Put them in `~/.config/pr-reactions/`, named after the reaction:
   config          # optional
 ```
 
-A video works too: `approve.mov` / `fail.mp4` (or `.m4v`). With both a picture and a video for a reaction, they take turns, one after the other. A video plays to its end with its own sound, at `VIDEO_VOLUME` (default 0.3). A clip encoded as HEVC with alpha shows with a see-through background, for example a green screen keyed out:
+A video works too: `approve.mov` / `fail.mp4` (or `.m4v`). With both a picture and a video for a reaction, they take turns, one after the other. Add more videos as `approve-2.mov`, `approve-3.mp4` and so on, and the picture and every video take turns in that order. A video plays to its end with its own sound, at `VIDEO_VOLUME` (default 0.3). A clip encoded as HEVC with alpha shows with a see-through background, for example a green screen keyed out:
 
 ```bash
 ffmpeg -i clip.mp4 -vf "fps=30,scale=360:-2,chromakey=0x00FF00:0.18:0.08,despill=type=green,format=bgra" \
