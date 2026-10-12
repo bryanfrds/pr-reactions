@@ -55,4 +55,25 @@ errf=$(mktemp); out=$(bash pr-reactions.sh --show approve 2>"$errf"); err=$(cat 
 [[ "$out" == "approve $PR_REACTIONS_CONFIG/approve.mov"* ]] && echo "ok   and plays the turn it holds" || { echo "FAIL read-only turn file shows: $out"; fails=$((fails + 1)); }
 chmod u+w "$PR_REACTIONS_CONFIG/.next-approve"
 
+# More videos join the turns, numbered from 2: picture, approve.mov, approve-2.mp4, round again.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG"/{approve.gif,approve.mov,approve-2.mp4}
+check "several videos: the picture first"            "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+check "then the first video"                         "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+check "then the second"                              "approve $PR_REACTIONS_CONFIG/approve-2.mp4" '--show approve'
+check "then back to the picture"                     "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+echo image > "$PR_REACTIONS_CONFIG/.next-approve"
+check "an old 'image' turn file means the picture"   "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+echo 7 > "$PR_REACTIONS_CONFIG/.next-approve"
+check "a turn past the end wraps round"             "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+echo 08 > "$PR_REACTIONS_CONFIG/.next-approve"
+check "a turn with a leading zero reads as base 10" "approve $PR_REACTIONS_CONFIG/approve-2.mp4" '--show approve'
+printf 'PLAY=video\n' > "$PR_REACTIONS_CONFIG/config"; echo 0 > "$PR_REACTIONS_CONFIG/.next-approve"
+check "PLAY=video takes turns between the videos"   "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+check "and skips the picture"                        "approve $PR_REACTIONS_CONFIG/approve-2.mp4" '--show approve'
+check "round again"                                  "approve $PR_REACTIONS_CONFIG/approve.mov" '--show approve'
+# Only a numbered video, with no approve.mov, still takes turns with the picture.
+export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG"/{approve.gif,approve-2.mov}
+check "a numbered video alone takes turns too"      "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
+check "and plays on its turn"                        "approve $PR_REACTIONS_CONFIG/approve-2.mov" '--show approve'
+
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
