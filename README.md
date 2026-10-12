@@ -55,14 +55,14 @@ Put them in `~/.config/pr-reactions/`, named after the reaction:
   config          # optional
 ```
 
-A video works too: `approve.mov` / `fail.mp4` (or `.m4v`). With both a picture and a video for a reaction, they take turns, one after the other. Add more videos as `approve-2.mov`, `approve-3.mp4` and so on, and the picture and every video take turns in that order. A video plays to its end with its own sound, at `VIDEO_VOLUME` (default 0.3). A clip encoded as HEVC with alpha shows with a see-through background, for example a green screen keyed out:
+A video works too: `approve.mov` / `fail.mp4` (or `.m4v`). With both a picture and a video for a reaction, they take turns, one after the other. Add more videos as `approve-2.mov`, `approve-3.mp4` and so on, with no gaps in the numbers, and the picture and every video take turns in that order. A video plays to its end with its own sound, at `VIDEO_VOLUME` (default 0.3). A clip encoded as HEVC with alpha shows with a see-through background, for example a green screen keyed out:
 
 ```bash
 ffmpeg -i clip.mp4 -vf "fps=30,scale=360:-2,chromakey=0x00FF00:0.18:0.08,despill=type=green,format=bgra" \
   -c:v hevc_videotoolbox -alpha_quality 0.8 -tag:v hvc1 -c:a aac approve.mov
 ```
 
-A video with no picture of your own always plays. `APPROVE_SECONDS` / `FAIL_SECONDS` don't apply to videos, which play to their end (cut off at 30 seconds). Set `PLAY=image` or `PLAY=video` in the config to stop the turns and always show one; `PLAY=video` with no video falls back to the picture. Dry runs (`PR_REACTIONS_DRY_RUN=1`) move the turn too.
+With no picture of your own, only the videos take turns (the built-in card never joins in). `APPROVE_SECONDS` / `FAIL_SECONDS` don't apply to videos, which play to their end (cut off at 30 seconds). Set `PLAY=image` in the config to always show the picture, or `PLAY=video` to take turns between the videos only; `PLAY=video` with no video falls back to the picture. Dry runs (`PR_REACTIONS_DRY_RUN=1`) move the turn too.
 
 Anything you leave out falls back to the default card, or to no sound. The `config` file is plain shell:
 

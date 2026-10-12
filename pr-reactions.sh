@@ -1,7 +1,7 @@
 #!/bin/bash
 # pr-reactions: pop up a reaction when a Claude Code pr-reviewer subagent
 # finishes. One picture and sound for an approval, another for requested changes,
-# each optionally taking turns with a video clip.
+# each optionally taking turns with one or more video clips.
 #
 # Runs as a Claude Code SubagentStop hook and reads the hook's JSON on stdin.
 #   pr-reactions.sh                 hook mode (reads stdin)
@@ -18,7 +18,7 @@ APPROVE_SECONDS=2
 FAIL_SECONDS=1.5
 VOLUME=0.35
 VIDEO_VOLUME=0.3     # videos carry their own sound, usually mixed loud
-PLAY=both            # both: a picture and a video take turns; or image / video
+PLAY=both            # both: the picture and each video take turns; or image / video
 [ -f "$CONFIG_DIR/config" ] && . "$CONFIG_DIR/config"
 
 if [ "${1:-}" = "--show" ]; then
@@ -46,7 +46,8 @@ IMG=$(find_file "$RESULT" png gif jpg jpeg)
 SOUND=$(find_file "$RESULT" mp3 m4a wav aiff)
 VIDEO=$(find_file "$RESULT" mov mp4 m4v)
 
-# More videos for a reaction go in as approve-2.mov, approve-3.mp4 and so on.
+# More videos for a reaction go in as approve-2.mov, approve-3.mp4 and so on, with no
+# gaps in the numbers: the search stops at the first one missing.
 VIDEOS=()
 [ -n "$VIDEO" ] && VIDEOS+=("$VIDEO")
 n=2
@@ -73,7 +74,7 @@ if [ ${#slots[@]} -gt 1 ]; then
     video) at=1 ;;                 # the turn file from before there could be more videos
     ''|*[!0-9]*) at=0 ;;
   esac
-  at=$((at % ${#slots[@]}))
+  at=$((10#$at % ${#slots[@]}))
   pick="${slots[$at]}"
   # (dry runs move the turn too, so --show tries each in order)
   [ -w "$CONFIG_DIR" ] && echo $(((at + 1) % ${#slots[@]})) 2>/dev/null > "$turn"
