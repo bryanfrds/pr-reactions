@@ -3,6 +3,16 @@
 // Run with: osascript -l JavaScript popup.js <image|video> <seconds-to-hold> [video volume 0-1]
 // Animated GIFs play. A video (.mov/.mp4/.m4v) plays to its end with its own sound;
 // one with a see-through background (HEVC with alpha) shows only its subject.
+// The card's size for a video of the given pixel size. Tall clips stand 320pt high;
+// square and wide ones 260pt, so they don't fill the screen. A size that can't be read
+// gets a portrait card. (Rotation isn't applied: naturalSize is the stored frame.)
+function videoBox(width, height) {
+  if (!(width > 0) || !(height > 0)) return { w: 222, h: 320 };
+  const h = height > width ? 320 : 260;
+  return { w: Math.round(h * width / height), h };
+}
+if (typeof module !== 'undefined') module.exports = { videoBox };   // for tests; JXA has no module
+
 function run(argv) {
   ObjC.import('Cocoa');
   ObjC.import('QuartzCore');
@@ -24,9 +34,7 @@ function run(argv) {
     const track = item.asset.tracksWithMediaType('vide').firstObject;   // 'vide' = AVMediaTypeVideo
     if (!track || track.isNil()) return;
     const size = track.naturalSize;
-    // Tall clips stand 320pt high; square and wide ones 260pt, so they don't fill the screen
-    h = size.height > size.width ? 320 : 260; w = Math.round(h * size.width / size.height);
-    if (!Number.isFinite(w) || w <= 0) w = 222;
+    ({ w, h } = videoBox(size.width, size.height));
   } else {
     img = $.NSImage.alloc.initWithContentsOfFile(path);
     if (!img || img.isNil()) return;

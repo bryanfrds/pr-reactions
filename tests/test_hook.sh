@@ -76,4 +76,17 @@ export PR_REACTIONS_CONFIG="$(mktemp -d)"; touch "$PR_REACTIONS_CONFIG"/{approve
 check "a numbered video alone takes turns too"      "approve $PR_REACTIONS_CONFIG/approve.gif" '--show approve'
 check "and plays on its turn"                        "approve $PR_REACTIONS_CONFIG/approve-2.mov" '--show approve'
 
+# The popup's video card: tall clips 320pt high, square and wide ones 260pt (needs node).
+if command -v node >/dev/null; then
+  box() { node -e 'const { videoBox } = require("./popup.js"); const b = videoBox(Number(process.argv[1]), Number(process.argv[2])); console.log(b.w + "x" + b.h)' "$1" "$2"; }
+  vcheck() { local got; got=$(box "$2" "$3"); [ "$got" = "$4" ] && echo "ok   $1" || { echo "FAIL $1: got $got, wanted $4"; fails=$((fails + 1)); }; }
+  vcheck "a tall clip stands 320 high"       360 520 222x320
+  vcheck "a wide clip stands 260 high"       640 360 462x260
+  vcheck "a square clip stands 260 high"     540 540 260x260
+  vcheck "a 0x0 size gets the portrait card" 0 0     222x320
+  vcheck "a missing height does too"         640 NaN 222x320
+else
+  echo "skip popup size checks (no node)"
+fi
+
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
