@@ -24,7 +24,8 @@ function run(argv) {
     const track = item.asset.tracksWithMediaType('vide').firstObject;   // 'vide' = AVMediaTypeVideo
     if (!track || track.isNil()) return;
     const size = track.naturalSize;
-    h = 320; w = Math.round(h * size.width / size.height);
+    // Tall clips stand 320pt high; square and wide ones 260pt, so they don't fill the screen
+    h = size.height > size.width ? 320 : 260; w = Math.round(h * size.width / size.height);
     if (!Number.isFinite(w) || w <= 0) w = 222;
   } else {
     img = $.NSImage.alloc.initWithContentsOfFile(path);
